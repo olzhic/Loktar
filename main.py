@@ -6,12 +6,10 @@ import tempfile
 
 class AudioBot:
     def __init__(self, token: str):
-        """Initialize the bot with the given token."""
         self.bot = telebot.TeleBot(token)
         self._setup_handlers()
 
     def _setup_handlers(self):
-        """Set up command and message handlers."""
         self.bot.message_handler(commands=['start'])(self.start_command)
         self.bot.message_handler(commands=['help'])(self.help_command)
         self.bot.message_handler(content_types=['audio', 'voice'])(self.handle_audio)
@@ -44,31 +42,30 @@ class AudioBot:
     def handle_audio(self, message):
         """Handle incoming audio files and voice messages."""
         try:
-            # Send processing message
             processing_msg = self.bot.reply_to(message, "🎵 Обрабатываю ваше аудио...")
 
-            # Get file info
+
             if message.audio:
                 file_info = self.bot.get_file(message.audio.file_id)
-            else:  # Voice message
+            else: 
                 file_info = self.bot.get_file(message.voice.file_id)
 
-            # Download the file
+
             downloaded_file = self.bot.download_file(file_info.file_path)
 
-            # Create temporary files for processing
+
             with tempfile.NamedTemporaryFile(delete=False, suffix='.ogg') as temp_input:
                 temp_input.write(downloaded_file)
                 temp_input.flush()
 
-                # Load and process the audio file
+
                 audio = AudioFileClip(temp_input.name)
 
-                # Process the audio based on caption
+
                 caption = message.caption.lower() if message.caption else ""
                 processed_audio = self._process_audio(audio, caption)
 
-                # Save the processed audio
+
                 output_suffix = '.mp3'
                 if caption and 'convert:wav' in caption:
                     output_suffix = '.wav'
@@ -77,7 +74,7 @@ class AudioBot:
                     processed_audio.write_audiofile(temp_output.name)
                     processed_audio.close()
 
-                    # Send the processed file back
+
                     with open(temp_output.name, 'rb') as audio_file:
                         self.bot.send_audio(
                             message.chat.id,
@@ -85,7 +82,7 @@ class AudioBot:
                             caption="✨ Вот ваше обработанное аудио!"
                         )
 
-                    # Clean up temporary files
+
                     os.unlink(temp_output.name)
 
             os.unlink(temp_input.name)
@@ -99,7 +96,7 @@ class AudioBot:
         if not caption:
             return audio
 
-        # Handle speed changes
+
         if 'speed:' in caption:
             speed = float(caption.split('speed:')[1].split()[0])
             audio = audio.speedx(speed)
@@ -112,6 +109,5 @@ class AudioBot:
         self.bot.polling(none_stop=True)
 
 if __name__ == "__main__":
-    # Replace 'YOUR_BOT_TOKEN' with your actual token from BotFather
     bot = AudioBot("7946249283:AAEnvin9qvyXaoICRPewub_wSdEiVmFH0fo")
     bot.run()
